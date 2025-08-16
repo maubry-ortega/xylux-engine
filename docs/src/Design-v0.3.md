@@ -269,19 +269,19 @@ fn start() {
 ## 15. Checklists para Implementación desde Cero
 
 ### Checklist 1: Setup General y Repo
-- [ ] Crea repo GitHub: "xylux-engine".
-- [ ] Clona local.
-- [ ] Crea estructura (ver stack).
-- [ ] Agrega .gitignore.
-- [ ] Commit inicial.
+- [X] Crea repo GitHub: "xylux-engine".
+- [X] Clona local.
+- [X] Crea estructura (ver stack).
+- [X] Agrega .gitignore.
+- [X] Commit inicial.
 
 ### Checklist 2: Setup IDE para Rust
-- [ ] Instala Rust (stable).
-- [ ] Verifica `rustc --version`.
-- [ ] Instala VSCode + rust-analyzer o Neovim LSP.
-- [ ] Cargo workspace en root.
-- [ ] Prueba `cargo build`.
-- [ ] Configura GitHub Actions CI.
+- [X] Instala Rust (stable).
+- [X] Verifica `rustc --version`.
+- [X] Instala VSCode + rust-analyzer o Neovim LSP.
+- [X] Cargo workspace en root.
+- [X] Prueba `cargo build`.
+- [X] Configura GitHub Actions CI.
 
 ### Checklist 3: Motor Núcleo en Rust
 - [ ] Crate ECS: SoA, spawn_entity.
