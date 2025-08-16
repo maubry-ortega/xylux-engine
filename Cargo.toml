@@ -3,4 +3,8 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
-clap = { version = "4.5.45", features = ["derive"] }
+clap   = { version = "4.5.45", features = ["derive"] }
+bitvec = "1.0.1"
+glam   = "0.30.5"
+rayon  = "1.11.0"
+criterion = "0.7"
