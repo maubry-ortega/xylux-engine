@@ -284,7 +284,7 @@ fn start() {
 - [X] Configura GitHub Actions CI.
 
 ### Checklist 3: Motor Núcleo en Rust
-- [ ] Crate ECS: SoA, spawn_entity.
+- [X] Crate ECS: SoA, spawn_entity.
 - [ ] Crate Render: Ash init, draw triangle.
 - [ ] Crate Core: Loop, integrate ECS+Render.
 - [ ] Example hello_cube.

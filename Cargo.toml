@@ -8,3 +8,6 @@ bitvec = "1.0.1"
 glam   = "0.30.5"
 rayon  = "1.11.0"
 criterion = "0.7"
+ash = "0.38.0" 
+ash-window = "0.13.0"
+sdl3 = { version = "0.14.36", features = ["raw-window-handle"] }

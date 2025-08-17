@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ash        = { workspace = true }
+ash-window = { workspace = true }
+sdl3      = { workspace = true }
+glam       = { workspace = true }
+xylux-ecs  = { path = "../xylux-ecs" }
+raw-window-handle = "0.6.2"
+
