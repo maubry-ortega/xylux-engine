@@ -1,25 +1,40 @@
-use xylux_render::Renderer;
+// main.rs
+use xylux_render::{Renderer, XyluxWindow};
 use xylux_ecs::{World, Transform};
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use std::time::Duration;
 
 fn main() {
-    // Inicializamos SDL3 solo dentro del test
-    let sdl_context = sdl3::init().expect("Failed to init SDL3");
-    let video_subsystem = sdl_context.video().expect("Failed to get video subsystem");
+    // Inicializar ventana
+    let xwindow = XyluxWindow::new("Render Test", 800, 600);
 
-    // Creamos la ventana
-    let window = video_subsystem
-        .window("Render Test", 800, 600)
-        .vulkan()
-        .resizable()
-        .build()
-        .expect("Failed to create window");
+    // Inicializar renderer
+    let mut renderer = Renderer::new(&xwindow.window);
 
-    // Llamamos al constructor existente de Renderer
-    let mut renderer = Renderer::new(&window);
-
+    // Crear mundo ECS
     let mut world = World::new(1000);
     world.register_component::<Transform>();
 
-    renderer.render(&mut world);
+    // Event loop principal
+    let mut event_pump = xwindow.sdl.event_pump().unwrap();
+    'running: loop {
+        // Procesar eventos
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. } => break 'running,
+                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => break 'running,
+                _ => {}
+            }
+        }
+
+        // Renderizar frame
+        renderer.render(&mut world);
+
+        // Pequeño delay para no saturar la GPU/CPU
+        std::thread::sleep(Duration::from_millis(16)); // ~60 FPS
+    }
+
+    // Limpiar recursos al salir
     renderer.cleanup();
 }

@@ -2,7 +2,7 @@ use ash::vk;
 use ash::khr::swapchain;
 use sdl3::video::Window;
 use crate::pipeline::Pipeline;
-use crate::vulkan::VulkanContext;
+use crate::vulkan::context::VulkanContext; // <-- ruta corregida
 use xylux_ecs::{World, Query, Transform};
 
 pub struct Renderer {
@@ -25,7 +25,8 @@ impl Renderer {
         // Obtener el formato y tamaño del swapchain desde VulkanContext usando getters
         let swapchain_extent = context.swapchain_extent();
         let swapchain_format = context.swapchain_format();
-        let swapchain_image_views = context.swapchain_image_views.clone();
+        // obtener image views como Vec (copiadas)
+        let swapchain_image_views = context.swapchain_image_views().to_vec();
 
         // Crear render pass
         let render_pass = Self::create_render_pass(&context.device, swapchain_format);
@@ -137,9 +138,8 @@ impl Renderer {
                 .unwrap();
 
             let clear_color = vk::ClearValue {
-    color: vk::ClearColorValue { float32: [1.0, 0.0, 0.0, 1.0] }, // rojo brillante
-};
-
+                color: vk::ClearColorValue { float32: [1.0, 0.0, 0.0, 1.0] }, // rojo brillante
+            };
 
             let render_pass_info = vk::RenderPassBeginInfo {
                 render_pass: self.render_pass,
@@ -202,6 +202,12 @@ impl Renderer {
                 .device
                 .queue_wait_idle(self.context.queue)
                 .unwrap();
+        }
+    }
+
+    pub fn device_wait_idle(&self) {
+        unsafe {
+            self.context.device.device_wait_idle().unwrap();
         }
     }
 
