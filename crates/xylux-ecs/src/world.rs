@@ -1,69 +1,83 @@
+//! # Módulo de World ECS Profesional
+//!
+//! Define el **mundo ECS**, responsable de gestionar entidades y componentes.
+//! Se centra en **single responsibility**, **rendimiento SoA**, y **paralelismo seguro**.
+//!
+//! Contiene:
+//! - `Entity`: representa una entidad única con control de versiones.
+//! - `World`: administra entidades, componentes y acceso seguro a datos.
+
 use crate::component::{Component, ComponentId, ComponentStorage};
 use std::collections::HashMap;
 
-/// Representa una entidad única en el mundo ECS.
-/// El par `(id, version)` asegura que no se acceda a entidades recicladas.
+/// Representa una entidad única en el ECS.
+///
+/// `(id, version)` evita accesos a entidades recicladas.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Entity {
     pub id: usize,
     pub version: u32,
 }
 
-/// Representa el mundo ECS que maneja entidades y componentes.
-/// Incluye control de versiones para evitar acceder a entidades inválidas.
+/// Contenedor principal del ECS.
+///
+/// Gestiona entidades, versiones y componentes usando almacenamiento **SoA**.
 pub struct World {
-    entity_count: usize,
     max_entities: usize,
+    entity_count: usize,
     components: HashMap<ComponentId, ComponentStorage>,
-    entity_versions: Vec<u32>,       // versión por entidad
-    free_entities: Vec<usize>,       // IDs libres para reutilizar
+    entity_versions: Vec<u32>,
+    free_entities: Vec<usize>,
 }
 
 impl World {
-    /// Crea un nuevo mundo con capacidad máxima `max_entities`.
+    /// Crea un nuevo mundo ECS con capacidad máxima `max_entities`.
     pub fn new(max_entities: usize) -> Self {
         Self {
-            entity_count: 0,
             max_entities,
+            entity_count: 0,
             components: HashMap::new(),
             entity_versions: vec![0; max_entities],
             free_entities: Vec::new(),
         }
     }
 
-    /// Crea una entidad y devuelve su `Entity` con id y versión.
+    /// Genera una nueva entidad.
+    ///
+    /// Reutiliza IDs libres si los hay, sino incrementa `entity_count`.
     pub fn spawn_entity(&mut self) -> Entity {
-        let id = if let Some(free) = self.free_entities.pop() {
-            free
-        } else {
+        let id = self.free_entities.pop().unwrap_or_else(|| {
             if self.entity_count >= self.max_entities {
                 panic!("Max entities reached");
             }
             let id = self.entity_count;
             self.entity_count += 1;
             id
-        };
-        let version = self.entity_versions[id];
-        Entity { id, version }
+        });
+
+        Entity {
+            id,
+            version: self.entity_versions[id],
+        }
     }
 
-    /// Elimina una entidad y aumenta su versión para invalidar referencias antiguas.
+    /// Elimina una entidad y sus componentes.
+    ///
+    /// Incrementa la versión para invalidar referencias antiguas.
     pub fn despawn_entity(&mut self, entity: Entity) {
-        // Validar que sigue viva antes de despawn
         if !self.is_alive(entity) {
-            return; // o panic!("Entidad inválida"), según lo que prefieras
+            return;
         }
 
         self.entity_versions[entity.id] = self.entity_versions[entity.id].wrapping_add(1);
         self.free_entities.push(entity.id);
 
-        // Limpia componentes asociados
-        for storage in self.components.values_mut() {
-            storage.remove(entity.id);
-        }
+        self.components.values_mut().for_each(|storage| storage.remove(entity.id));
     }
 
-    /// Registra un tipo de componente para permitir insertarlo en entidades.
+    /// Registra un nuevo tipo de componente en el mundo.
+    ///
+    /// Crea un `ComponentStorage` dedicado con capacidad `max_entities`.
     pub fn register_component<T: Component>(&mut self) {
         let id = ComponentId::of::<T>();
         self.components
@@ -71,21 +85,24 @@ impl World {
             .or_insert_with(|| ComponentStorage::new::<T>(self.max_entities));
     }
 
-    /// Inserta un componente `T` en una entidad, validando que esté viva.
+    /// Inserta un componente `T` en una entidad específica.
+    ///
+    /// # Panics
+    /// - Si la entidad no está viva.
+    /// - Si el componente no ha sido registrado.
     pub fn insert<T: Component + Default>(&mut self, entity: Entity, component: T) {
         if !self.is_alive(entity) {
-            panic!("Intento de insertar en una entidad inválida");
+            panic!("Intento de insertar componente en entidad inválida");
         }
 
         let id = ComponentId::of::<T>();
-        if let Some(storage) = self.components.get_mut(&id) {
-            storage.insert(entity.id, component);
-        } else {
-            panic!("Componente no registrado: {:?}", id);
-        }
+        self.components
+            .get_mut(&id)
+            .expect("Componente no registrado")
+            .insert(entity.id, component);
     }
 
-    /// Obtiene una referencia inmutable a un componente si la entidad sigue viva.
+    /// Obtiene una referencia inmutable al componente `T` de una entidad.
     pub fn get<T: Component>(&self, entity: Entity) -> Option<&T> {
         if !self.is_alive(entity) {
             return None;
@@ -95,7 +112,7 @@ impl World {
             .and_then(|storage| storage.get(entity.id))
     }
 
-    /// Obtiene una referencia mutable a un componente si la entidad sigue viva.
+    /// Obtiene una referencia mutable al componente `T` de una entidad.
     pub fn get_mut<T: Component>(&mut self, entity: Entity) -> Option<&mut T> {
         if !self.is_alive(entity) {
             return None;
@@ -105,18 +122,23 @@ impl World {
             .and_then(|storage| storage.get_mut(entity.id))
     }
 
-    /// Devuelve la versión actual de una entidad según su ID.
+    /// Devuelve la versión actual de una entidad por ID.
     pub fn entity_version(&self, entity_id: usize) -> u32 {
         self.entity_versions[entity_id]
     }
 
-    /// Comprueba si una entidad sigue viva (versión coincide).
+    /// Comprueba si una entidad sigue viva.
     pub fn is_alive(&self, entity: Entity) -> bool {
         self.entity_versions[entity.id] == entity.version
     }
 
-    /// Devuelve la cantidad actual de entidades creadas (incluye huecos).
+    /// Retorna la cantidad total de entidades creadas (incluye huecos reciclados).
     pub fn entity_count(&self) -> usize {
         self.entity_count
+    }
+
+    /// Retorna la capacidad máxima de entidades del mundo.
+    pub fn capacity(&self) -> usize {
+        self.max_entities
     }
 }
