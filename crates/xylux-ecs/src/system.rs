@@ -6,9 +6,9 @@
 //! - `TaskGraph`: organiza sistemas con dependencias y permite ejecución segura.
 //! - Ejemplo: `move_system`, que actualiza posición según Velocity.
 
-use crate::query::{Query, Velocity};
+use crate::component::{Transform, Velocity};
+use crate::query::Query;
 use crate::world::World;
-use crate::component::Transform;
 use std::collections::{HashMap, HashSet};
 
 /// --- SYSTEM ---
@@ -91,29 +91,26 @@ impl TaskGraph {
 
     /// Ejecuta todos los sistemas en orden topológico.
     pub fn run(&mut self, world: &mut World) {
-        // Clonamos el orden para poder obtener un préstamo mutable de `self.systems`
-        // dentro del bucle sin violar las reglas del borrow checker.
-        // El coste de clonar un Vec de Strings es bajo si no hay miles de sistemas.
-        for name in self.execution_order.clone() {
-            if let Some((system, _)) = self.systems.get_mut(&name) {
+        // Para evitar problemas con el borrow checker al iterar y mutar `self.systems`
+        // a la vez, movemos temporalmente los sistemas fuera de la estructura.
+        let mut systems = std::mem::take(&mut self.systems);
+        for name in &self.execution_order {
+            if let Some((system, _)) = systems.get_mut(name) {
                 system.run(world);
             }
         }
+        self.systems = systems;
     }
 }
 
 /// --- EJEMPLO DE SISTEMA ---
 /// Sistema que mueve entidades según su Velocity.
 pub fn move_system() -> System {
+    // Este sistema demuestra una query con acceso mutable a un componente
+    // y de solo lectura a otro.
     System::new(|world: &mut World| {
-        let mut query = Query::<(&Transform, &mut Velocity)>::new(world);
-
-        for (transform, velocity) in query.iter() {
-            // Acceso seguro mediante puntero crudo solo donde es estrictamente necesario
-            let transform_ptr = transform as *const Transform as *mut Transform;
-            unsafe {
-                (*transform_ptr).position += velocity.0;
-            }
+        for (transform, velocity) in Query::<(&mut Transform, &Velocity)>::new(world).iter() {
+            transform.position += velocity.0;
         }
     })
 }

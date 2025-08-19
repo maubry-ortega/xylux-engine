@@ -74,7 +74,7 @@ pub fn render_frame(renderer: &mut Renderer, world: &mut World, window: &XyluxWi
         device.cmd_bind_pipeline(command_buffer, vk::PipelineBindPoint::GRAPHICS, renderer.pipeline.pipeline);
         device.cmd_draw(command_buffer, 3, 1, 0, 0); // Dibujar el triángulo del shader.
 
-        let mut query = Query::<&Transform>::new(world);
+        let mut query = Query::<(&Transform,)>::new(world);
         for _ in query.iter() {
             // Aquí irían las llamadas de draw
         }

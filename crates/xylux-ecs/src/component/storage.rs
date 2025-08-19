@@ -1,42 +1,16 @@
-//! # Módulo de componentes ECS
-//!
-//! Define la infraestructura base para manejar **componentes** en un motor ECS
-//! (Entity Component System). Contiene:
-//! - `ComponentId`: Identificador único de tipo de componente.
-//! - `Component`: Trait que deben implementar todos los componentes.
-//! - `ComponentStorage`: Contenedor genérico de componentes por entidad.
-//! - `Transform`: Componente de ejemplo con posición y rotación.
+//! Define el almacenamiento de componentes (SoA).
 
-use glam::{Vec3, Quat};
-use std::any::{Any, TypeId};
+use super::Component;
 use bitvec::prelude::*;
+use std::any::Any;
 
-/// Identificador único para cada tipo de componente.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct ComponentId(TypeId);
-
-impl ComponentId {
-    /// Obtiene el `ComponentId` único para el tipo `T`.
-    pub fn of<T: 'static>() -> Self {
-        ComponentId(TypeId::of::<T>())
-    }
-}
-
-/// Trait que deben implementar todos los componentes ECS.
-pub trait Component: 'static + Default {
-    /// Retorna el identificador único del tipo de componente.
-    fn component_id() -> ComponentId
-    where
-        Self: Sized,
-    {
-        ComponentId::of::<Self>()
-    }
-}
-
-/// Almacenamiento genérico para un solo tipo de componente.
+/// Almacenamiento genérico para un solo tipo de componente (SoA).
+///
+/// Mantiene un `Vec<T>` para los datos y un `BitVec` para rastrear
+/// qué entidades poseen el componente, permitiendo iteraciones rápidas.
 pub struct ComponentStorage {
     data: Box<dyn Any>,
-    bitmask: BitVec,
+    pub(crate) bitmask: BitVec,
 }
 
 impl ComponentStorage {
@@ -56,7 +30,7 @@ impl ComponentStorage {
         let vec = self
             .data
             .downcast_mut::<Vec<T>>()
-            .expect("tipo incorrecto en ComponentStorage");
+            .expect("Tipo incorrecto en ComponentStorage::insert");
 
         if entity >= vec.len() {
             vec.resize_with(entity + 1, Default::default);
@@ -84,7 +58,7 @@ impl ComponentStorage {
 
         self.data
             .downcast_ref::<Vec<T>>()
-            .expect("tipo incorrecto en ComponentStorage")
+            .expect("Tipo incorrecto en ComponentStorage::get")
             .get(entity)
     }
 
@@ -96,7 +70,7 @@ impl ComponentStorage {
 
         self.data
             .downcast_mut::<Vec<T>>()
-            .expect("tipo incorrecto en ComponentStorage")
+            .expect("Tipo incorrecto en ComponentStorage::get_mut")
             .get_mut(entity)
     }
 
@@ -105,12 +79,3 @@ impl ComponentStorage {
         entity < self.bitmask.len() && self.bitmask[entity]
     }
 }
-
-/// Componente de ejemplo: Transformación 3D de una entidad.
-#[derive(Clone, Copy, Default)]
-pub struct Transform {
-    pub position: Vec3,
-    pub rotation: Quat,
-}
-
-impl Component for Transform {}

@@ -14,3 +14,7 @@ criterion = { workspace = true }
 [[bench]]
 name = "ecs_bench"
 harness = false
+
+[[bench]]
+name = "ecs_1mill"
+harness = false

@@ -1,23 +1,12 @@
-//! # Módulo de World ECS Profesional
+//! # Módulo World
 //!
-//! Define el **mundo ECS**, responsable de gestionar entidades y componentes.
-//! Se centra en **single responsibility**, **rendimiento SoA**, y **paralelismo seguro**.
-//!
-//! Contiene:
-//! - `Entity`: representa una entidad única con control de versiones.
-//! - `World`: administra entidades, componentes y acceso seguro a datos.
+//! Define el `World`, el contenedor principal del ECS que gestiona
+//! todas las entidades, componentes y sus ciclos de vida.
 
 use crate::component::{Component, ComponentId, ComponentStorage};
+use crate::entity::Entity;
+use bitvec::prelude::*;
 use std::collections::HashMap;
-
-/// Representa una entidad única en el ECS.
-///
-/// `(id, version)` evita accesos a entidades recicladas.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Entity {
-    pub id: usize,
-    pub version: u32,
-}
 
 /// Contenedor principal del ECS.
 ///
@@ -25,9 +14,10 @@ pub struct Entity {
 pub struct World {
     max_entities: usize,
     entity_count: usize,
-    components: HashMap<ComponentId, ComponentStorage>,
+    pub(crate) components: HashMap<ComponentId, ComponentStorage>,
     entity_versions: Vec<u32>,
     free_entities: Vec<usize>,
+    alive_mask: BitVec,
 }
 
 impl World {
@@ -39,6 +29,7 @@ impl World {
             components: HashMap::new(),
             entity_versions: vec![0; max_entities],
             free_entities: Vec::new(),
+            alive_mask: bitvec![0; max_entities],
         }
     }
 
@@ -54,6 +45,8 @@ impl World {
             self.entity_count += 1;
             id
         });
+
+        self.alive_mask.set(id, true);
 
         Entity {
             id,
@@ -71,6 +64,7 @@ impl World {
 
         self.entity_versions[entity.id] = self.entity_versions[entity.id].wrapping_add(1);
         self.free_entities.push(entity.id);
+        self.alive_mask.set(entity.id, false);
 
         self.components.values_mut().for_each(|storage| storage.remove(entity.id));
     }
@@ -90,7 +84,7 @@ impl World {
     /// # Panics
     /// - Si la entidad no está viva.
     /// - Si el componente no ha sido registrado.
-    pub fn insert<T: Component + Default>(&mut self, entity: Entity, component: T) {
+    pub fn insert<T: Component>(&mut self, entity: Entity, component: T) {
         if !self.is_alive(entity) {
             panic!("Intento de insertar componente en entidad inválida");
         }
@@ -125,6 +119,33 @@ impl World {
     /// Devuelve la versión actual de una entidad por ID.
     pub fn entity_version(&self, entity_id: usize) -> u32 {
         self.entity_versions[entity_id]
+    }
+
+    /// Comprueba si una entidad tiene un componente específico por ID de componente.
+    pub fn has_component(&self, entity: Entity, component_id: ComponentId) -> bool {
+        if !self.is_alive(entity) {
+            return false;
+        }
+        self.components
+            .get(&component_id)
+            .map_or(false, |storage| storage.has(entity.id))
+    }
+
+    /// Devuelve una colección de entidades que tienen un componente específico.
+    ///
+    /// Internamente, itera sobre el `bitmask` del `ComponentStorage` para encontrar
+    /// eficientemente todas las entidades con el componente.
+    pub fn entities_with_component(&self, component_id: ComponentId) -> Option<Vec<Entity>> {
+        self.components.get(&component_id).map(|storage| {
+            storage.bitmask.iter_ones()
+                .map(|id| Entity { id, version: self.entity_versions[id] })
+                .collect()
+        })
+    }
+
+    /// Devuelve un bitmask de todas las entidades vivas.
+    pub(crate) fn alive_mask(&self) -> &BitVec {
+        &self.alive_mask
     }
 
     /// Comprueba si una entidad sigue viva.

@@ -1,5 +1,7 @@
 # Xylux Engine — Documento de Diseño e Implementación Completo (Versión 0.3)
 
+<p align="center"><img src="../../assets/logo_xylux.png" width="400" alt="Xylux Engine Logo"></p>
+
 **Versión:** 0.3  
 **Fecha:** 2025-08-15  
 **Autores:** Basado en el borrador inicial (v0.2) y extensiones de mejores prácticas, stack tecnológico, roadmap y checklists.  
