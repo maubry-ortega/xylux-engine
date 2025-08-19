@@ -47,7 +47,9 @@ impl TaskGraph {
 
     /// Añade un sistema al grafo.
     pub fn add_system(&mut self, name: String, dependencies: Vec<String>, system: System) {
-        self.systems.insert(name, (system, dependencies));
+        self.systems.insert(name.clone(), (system, dependencies));
+        // Es más eficiente recalcular el orden aquí que en cada `run()`.
+        self.compute_execution_order();
     }
 
     /// Calcula el orden topológico de ejecución según dependencias.
@@ -89,9 +91,11 @@ impl TaskGraph {
 
     /// Ejecuta todos los sistemas en orden topológico.
     pub fn run(&mut self, world: &mut World) {
-        self.compute_execution_order();
-        for name in &self.execution_order {
-            if let Some((system, _)) = self.systems.get_mut(name) {
+        // Clonamos el orden para poder obtener un préstamo mutable de `self.systems`
+        // dentro del bucle sin violar las reglas del borrow checker.
+        // El coste de clonar un Vec de Strings es bajo si no hay miles de sistemas.
+        for name in self.execution_order.clone() {
+            if let Some((system, _)) = self.systems.get_mut(&name) {
                 system.run(world);
             }
         }

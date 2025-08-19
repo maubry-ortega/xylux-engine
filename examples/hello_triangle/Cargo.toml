@@ -1,0 +1,9 @@
+[package]
+name = "hello_triangle"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+xylux-ecs    = { path = "../../crates/xylux-ecs" }
+xylux-render = { path = "../../crates/xylux-render" }
+xylux-window = { path = "../../crates/xylux-window" }

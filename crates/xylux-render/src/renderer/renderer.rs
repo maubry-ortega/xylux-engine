@@ -1,86 +1,99 @@
 use ash::vk;
-use sdl3::video::Window;
-
 use crate::pipeline::Pipeline;
-use crate::vulkan::context::VulkanContext;
-use crate::vulkan::create_swapchain; // Función para crear swapchain
-use crate::renderer::{render_pass, framebuffers, commands};
+use crate::vulkan::context::{VulkanContext, MAX_FRAMES_IN_FLIGHT};
 
-use xylux_ecs::World; // Para usar World si es necesario
+use xylux_ecs::World;
+use crate::renderer::{render_pass, framebuffers, commands};
+use xylux_window::XyluxWindow; // << Importar tu wrapper de ventana
 
 pub struct Renderer {
+    // Hacemos el contexto mutable para actualizar el estado de sincronización
     pub context: VulkanContext,
     pub pipeline: Pipeline,
     pub framebuffers: Vec<vk::Framebuffer>,
-    pub swapchain_extent: vk::Extent2D,
     pub render_pass: vk::RenderPass,
-    pub swapchain_images: Vec<vk::Image>,
-    pub swapchain_image_views: Vec<vk::ImageView>,
+    pub(crate) current_frame: usize,
 }
 
 impl Renderer {
-    pub fn new(window: &Window) -> Self {
-        // Crear contexto Vulkan
-        let mut context = VulkanContext::new(window);
+    // ✅ Cambiar &Window por &XyluxWindow
+    pub fn new(window: &XyluxWindow) -> Self {
+        // 1️⃣ Crear contexto Vulkan
+        let context = VulkanContext::new(window);
 
-        // Crear swapchain
-        let (swapchain, format, extent, images, image_views) = create_swapchain(
-            &context.entry,
-            &context.instance,
-            context.physical_device,
-            &context.device,
-            context.surface,
-            window,
-        );
+        // 2️⃣ Crear render pass usando la información del contexto
+        let render_pass = render_pass::create_render_pass(&context.device, context.swapchain_format());
 
-        // Guardamos los swapchain images y el swapchain en el contexto
-        context.swapchain = swapchain;
-        context.swapchain_images = images.clone();
-
-        // Crear render pass
-        let render_pass = render_pass::create_render_pass(&context.device, format);
-
-        // Crear framebuffers
+        // 3️⃣ Crear framebuffers
         let framebuffers = framebuffers::create_framebuffers(
             &context.device,
             render_pass,
-            &image_views.to_vec(), // convertir slice a Vec
-            extent,
+            context.swapchain_image_views(),
+            context.swapchain_extent(),
         );
 
-        // Crear pipeline
-        let pipeline = Pipeline::new(&context.device, format);
+        // 4️⃣ Crear pipeline
+        let pipeline = Pipeline::new(&context.device, render_pass, context.swapchain_extent());
 
         Self {
             context,
             pipeline,
             framebuffers,
-            swapchain_extent: extent,
             render_pass,
-            swapchain_images: images,
-            swapchain_image_views: image_views,
+            current_frame: 0,
         }
     }
 
-    pub fn render(&self, world: &mut World) {
-        commands::render_frame(self, world);
+    pub fn render(&mut self, world: &mut World, window: &XyluxWindow) {
+        commands::render_frame(self, world, window);
+        self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     pub fn device_wait_idle(&self) {
-        unsafe { self.context.device.device_wait_idle().unwrap(); }
+        unsafe {
+            self.context.device.device_wait_idle().unwrap();
+        }
+    }
+
+    fn cleanup_swapchain(&self) {
+        unsafe {
+            for &framebuffer in &self.framebuffers {
+                self.context.device.destroy_framebuffer(framebuffer, None);
+            }
+            self.pipeline.cleanup(&self.context.device);
+            self.context.device.destroy_render_pass(self.render_pass, None);
+            self.context.cleanup_swapchain_resources();
+        }
+    }
+
+    pub fn recreate_swapchain(&mut self, window: &XyluxWindow) {
+        self.device_wait_idle();
+        self.cleanup_swapchain();
+
+        // Recrear swapchain y sus dependencias
+        self.context.recreate_swapchain_resources(window);
+
+        self.render_pass = render_pass::create_render_pass(
+            &self.context.device,
+            self.context.swapchain_format(),
+        );
+        self.pipeline = Pipeline::new(
+            &self.context.device,
+            self.render_pass,
+            self.context.swapchain_extent(),
+        );
+        self.framebuffers = framebuffers::create_framebuffers(
+            &self.context.device,
+            self.render_pass,
+            self.context.swapchain_image_views(),
+            self.context.swapchain_extent(),
+        );
     }
 
     pub fn cleanup(&self) {
-        unsafe {
-            for &fb in &self.framebuffers {
-                self.context.device.destroy_framebuffer(fb, None);
-            }
-            for &iv in &self.swapchain_image_views {
-                self.context.device.destroy_image_view(iv, None);
-            }
-            self.context.device.destroy_render_pass(self.render_pass, None);
-        }
-        self.pipeline.cleanup(&self.context.device);
+        // Esperar a que la GPU termine todas las operaciones pendientes antes de limpiar.
+        self.device_wait_idle();
+        self.cleanup_swapchain();
         self.context.cleanup();
     }
 }

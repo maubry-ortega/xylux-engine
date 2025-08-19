@@ -121,3 +121,21 @@ impl<'w> Queryable<'w> for (&'w Transform, &'w mut Velocity) {
         ))
     }
 }
+
+/// Implementación de Queryable para referencia mutable a Transform y de lectura a Velocity
+impl<'w> Queryable<'w> for (&'w mut Transform, &'w Velocity) {
+    fn component_ids() -> Vec<ComponentId> {
+        vec![ComponentId::of::<Transform>(), ComponentId::of::<Velocity>()]
+    }
+
+    unsafe fn fetch(world: *mut World, entity: Entity) -> Option<Self> {
+        if !(unsafe { (*world).is_alive(entity) }) {
+            return None;
+        }
+
+        Some((
+            unsafe { (*world).get_mut::<Transform>(entity)? },
+            unsafe { (*world).get::<Velocity>(entity)? },
+        ))
+    }
+}
