@@ -31,6 +31,10 @@ pub struct VulkanContext {
     pub render_finished_semaphores: Vec<vk::Semaphore>,
     pub in_flight_fences: Vec<vk::Fence>,
     pub images_in_flight: Vec<vk::Fence>,
+
+    pub depth_image: vk::Image,
+    pub depth_image_memory: vk::DeviceMemory,
+    pub depth_image_view: vk::ImageView,
 }
 
 impl VulkanContext {
@@ -80,6 +84,26 @@ impl VulkanContext {
             }
         }
 
+        // 8️⃣ Crear Depth Buffer
+        let depth_format = super::image::find_depth_format(&instance, physical_device);
+        let (depth_image, depth_image_memory) = super::image::create_image(
+            &instance,
+            &device,
+            physical_device,
+            swapchain_extent.width,
+            swapchain_extent.height,
+            depth_format,
+            vk::ImageTiling::OPTIMAL,
+            vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
+            vk::MemoryPropertyFlags::DEVICE_LOCAL,
+        );
+        let depth_image_view = super::image::create_image_view(
+            &device,
+            depth_image,
+            depth_format,
+            vk::ImageAspectFlags::DEPTH,
+        );
+
         Self {
             entry,
             instance,
@@ -98,6 +122,9 @@ impl VulkanContext {
             render_finished_semaphores,
             in_flight_fences,
             images_in_flight,
+            depth_image,
+            depth_image_memory,
+            depth_image_view,
         }
     }
 
@@ -115,6 +142,10 @@ impl VulkanContext {
 
     pub fn cleanup_swapchain_resources(&self) {
         unsafe {
+            self.device.destroy_image_view(self.depth_image_view, None);
+            self.device.destroy_image(self.depth_image, None);
+            self.device.free_memory(self.depth_image_memory, None);
+
             for &image_view in &self.swapchain_image_views {
                 self.device.destroy_image_view(image_view, None);
             }
@@ -132,6 +163,30 @@ impl VulkanContext {
         self.swapchain_images = images;
         self.swapchain_image_views = image_views;
         self.images_in_flight = self.swapchain_images.iter().map(|_| vk::Fence::null()).collect();
+
+        // Recrear Depth Buffer
+        let depth_format = super::image::find_depth_format(&self.instance, self.physical_device);
+        let (depth_image, depth_image_memory) = super::image::create_image(
+            &self.instance,
+            &self.device,
+            self.physical_device,
+            self.swapchain_extent.width,
+            self.swapchain_extent.height,
+            depth_format,
+            vk::ImageTiling::OPTIMAL,
+            vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
+            vk::MemoryPropertyFlags::DEVICE_LOCAL,
+        );
+        let depth_image_view = super::image::create_image_view(
+            &self.device,
+            depth_image,
+            depth_format,
+            vk::ImageAspectFlags::DEPTH,
+        );
+
+        self.depth_image = depth_image;
+        self.depth_image_memory = depth_image_memory;
+        self.depth_image_view = depth_image_view;
     }
 
     pub fn cleanup(&self) {

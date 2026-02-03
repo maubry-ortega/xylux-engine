@@ -1,5 +1,5 @@
 [package]
-name = "hello_triangle"
+name = "hello_xylux"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,3 +7,4 @@ edition = "2024"
 xylux-ecs    = { path = "../../crates/xylux-ecs" }
 xylux-render = { path = "../../crates/xylux-render" }
 xylux-window = { path = "../../crates/xylux-window" }
+glam         = "0.30.5"

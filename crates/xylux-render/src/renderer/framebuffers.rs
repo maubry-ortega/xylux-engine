@@ -4,10 +4,11 @@ pub fn create_framebuffers(
     device: &ash::Device,
     render_pass: vk::RenderPass,
     image_views: &[vk::ImageView],
+    depth_image_view: vk::ImageView,
     extent: vk::Extent2D,
 ) -> Vec<vk::Framebuffer> {
     image_views.iter().map(|&image_view| {
-        let attachments = [image_view];
+        let attachments = [image_view, depth_image_view];
         let create_info = vk::FramebufferCreateInfo {
             render_pass,
             attachment_count: attachments.len() as u32,

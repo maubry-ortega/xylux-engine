@@ -26,12 +26,14 @@ impl XyluxWindow {
 
     pub fn run_loop<F>(&mut self, mut frame_callback: F)
     where
-        F: FnMut(&XyluxWindow),
+        F: FnMut(&XyluxWindow, &[Event]),
     {
         let mut event_pump = self.sdl.event_pump().expect("Failed to get event pump");
 
         'running: loop {
-            for event in event_pump.poll_iter() {
+            let events: Vec<Event> = event_pump.poll_iter().collect();
+
+            for event in &events {
                 match event {
                     Event::Quit { .. } => break 'running,
                     Event::KeyDown { keycode: Some(Keycode::Escape), .. } => break 'running,
@@ -39,7 +41,7 @@ impl XyluxWindow {
                 }
             }
 
-            frame_callback(self);
+            frame_callback(self, &events);
             std::thread::sleep(Duration::from_millis(16));
         }
     }

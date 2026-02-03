@@ -40,7 +40,17 @@ impl Pipeline {
         ];
 
         // Configuración básica de pipeline
-        let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::default();
+        let binding_descriptions = [crate::vertex::Vertex::get_binding_description()];
+        let attribute_descriptions = crate::vertex::Vertex::get_attribute_descriptions();
+
+        let vertex_input_info = vk::PipelineVertexInputStateCreateInfo {
+            vertex_binding_description_count: binding_descriptions.len() as u32,
+            p_vertex_binding_descriptions: binding_descriptions.as_ptr(),
+            vertex_attribute_description_count: attribute_descriptions.len() as u32,
+            p_vertex_attribute_descriptions: attribute_descriptions.as_ptr(),
+            ..Default::default()
+        };
+
         let input_assembly = vk::PipelineInputAssemblyStateCreateInfo {
             topology: vk::PrimitiveTopology::TRIANGLE_LIST,
             primitive_restart_enable: 0,
@@ -74,13 +84,24 @@ impl Pipeline {
             rasterizer_discard_enable: 0,
             polygon_mode: vk::PolygonMode::FILL,
             line_width: 1.0,
-            cull_mode: vk::CullModeFlags::BACK,
-            front_face: vk::FrontFace::CLOCKWISE,
+            cull_mode: vk::CullModeFlags::NONE, // Debug: Disable culling to prevent black screen if winding is wrong
+            front_face: vk::FrontFace::COUNTER_CLOCKWISE, // Cambiado para coordinación 3D estándar
             ..Default::default()
         };
 
         let multisampling = vk::PipelineMultisampleStateCreateInfo {
             rasterization_samples: vk::SampleCountFlags::TYPE_1,
+            ..Default::default()
+        };
+
+        let depth_stencil = vk::PipelineDepthStencilStateCreateInfo {
+            depth_test_enable: 1,
+            depth_write_enable: 1,
+            depth_compare_op: vk::CompareOp::LESS,
+            depth_bounds_test_enable: 0,
+            stencil_test_enable: 0,
+            min_depth_bounds: 0.0,
+            max_depth_bounds: 1.0,
             ..Default::default()
         };
 
@@ -101,7 +122,19 @@ impl Pipeline {
             ..Default::default()
         };
 
-        let pipeline_layout_info = vk::PipelineLayoutCreateInfo::default();
+        // Push Constant para MVP
+        let push_constant_range = vk::PushConstantRange {
+            stage_flags: vk::ShaderStageFlags::VERTEX,
+            offset: 0,
+            size: std::mem::size_of::<glam::Mat4>() as u32,
+        };
+
+        let pipeline_layout_info = vk::PipelineLayoutCreateInfo {
+            push_constant_range_count: 1,
+            p_push_constant_ranges: &push_constant_range,
+            ..Default::default()
+        };
+
         let pipeline_layout = unsafe {
             device.create_pipeline_layout(&pipeline_layout_info, None).unwrap()
         };
@@ -114,7 +147,7 @@ impl Pipeline {
             p_viewport_state: &viewport_state,
             p_rasterization_state: &rasterizer,
             p_multisample_state: &multisampling,
-            p_depth_stencil_state: std::ptr::null(),
+            p_depth_stencil_state: &depth_stencil,
             p_color_blend_state: &color_blending,
             layout: pipeline_layout,
             render_pass,
