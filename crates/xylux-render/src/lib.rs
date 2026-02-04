@@ -7,14 +7,16 @@ pub mod model;
 pub mod grid;
 pub mod ui;
 pub mod scene;
+pub mod text;
 
 pub use renderer::Renderer;
 pub use vulkan::context::VulkanContext;
 pub use vertex::Vertex;
 pub use camera::Camera;
-pub use model::load_obj;
+pub use model::{load_obj, load_blend};
 pub use grid::generate_grid;
 pub use ui::generate_ui_panel;
+pub use text::generate_text_mesh;
 pub use scene::{SceneNode, Mesh};
 
 #[cfg(test)]

@@ -46,8 +46,8 @@ impl Camera {
                     let dy = *y - self.last_mouse_pos.1;
                     
                     let sensitivity = 0.005;
-                    self.yaw -= dx * sensitivity;
-                    self.pitch -= dy * sensitivity;
+                    self.yaw += dx * sensitivity;
+                    self.pitch += dy * sensitivity;
 
                     // Clamp pitch
                     self.pitch = self.pitch.clamp(-1.5, 1.5);

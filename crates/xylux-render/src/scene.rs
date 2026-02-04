@@ -1,5 +1,5 @@
 use glam::Mat4;
-use crate::vertex::Vertex;
+// use crate::vertex::Vertex;
 
 #[derive(Clone)]
 pub struct Mesh {

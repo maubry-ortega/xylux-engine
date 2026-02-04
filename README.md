@@ -38,12 +38,12 @@ rustup update stable
 
 ### Ejecutar el Ejemplo
 
-Para ver el motor en acción, clona el repositorio y ejecuta el ejemplo `hello_triangle`:
+Para ver el motor en acción, clona el repositorio y ejecuta el ejemplo `hello_xylux`:
 
 ```bash
 git clone https://github.com/maubry-ortega/xylux-engine.git
 cd xylux-engine
-cargo run --example hello_triangle
+cargo run -p hello_xylux
 ```
 
 ## 📂 Estructura del Proyecto

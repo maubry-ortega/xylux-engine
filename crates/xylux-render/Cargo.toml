@@ -11,3 +11,6 @@ glam              = { workspace = true }
 xylux-ecs         = { path = "../xylux-ecs" }
 raw-window-handle = { workspace = true }
 xylux-window      = { path = "../xylux-window" }
+blend             = "0.8.0"
+zstd              = "0.13"
+tempfile          = "3.10"
