@@ -91,7 +91,7 @@ impl Renderer {
         self.ui_start_index = index;
     }
 
-    pub fn render(&mut self, world: &mut World, window: &XyluxWindow, camera: &crate::camera::Camera) {
+    pub fn render(&mut self, world: &mut World, window: &XyluxWindow, camera: &xylux_core::Camera) {
         commands::render_frame(self, world, window, camera);
         self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
@@ -143,7 +143,9 @@ impl Renderer {
 
     pub fn cleanup(&self) {
         // Esperar a que la GPU termine todas las operaciones pendientes antes de limpiar.
-        self.device_wait_idle();
+        unsafe {
+             let _ = self.context.device.device_wait_idle();
+        }
         if self.vertex_buffer != vk::Buffer::null() {
             unsafe {
                 self.context.device.destroy_buffer(self.vertex_buffer, None);
@@ -151,6 +153,12 @@ impl Renderer {
             }
         }
         self.cleanup_swapchain();
-        self.context.cleanup();
+        self.context.cleanup(); // Warning: if Context doesn't impl Drop, this is good.
+    }
+}
+
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        self.cleanup();
     }
 }

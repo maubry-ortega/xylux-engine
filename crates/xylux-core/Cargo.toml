@@ -4,3 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+glam        = { workspace = true }
+xylux-input = { path = "../xylux-input" }
+sdl3        = { workspace = true }
+xylux-ecs   = { path = "../xylux-ecs" }

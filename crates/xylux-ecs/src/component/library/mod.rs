@@ -6,6 +6,8 @@
 
 pub mod transform;
 pub mod velocity;
+pub mod mesh;
 
 pub use transform::Transform;
 pub use velocity::Velocity;
+pub use mesh::MeshComponent;

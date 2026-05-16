@@ -1,0 +1,13 @@
+[package]
+name = "xylux-engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+xylux-core   = { path = "../xylux-core" }
+xylux-render = { path = "../xylux-render" }
+xylux-ecs    = { path = "../xylux-ecs" }
+xylux-window = { path = "../xylux-window" }
+xylux-input  = { path = "../xylux-input" }
+xylux-assets = { path = "../xylux-assets" }
+glam         = { workspace = true }

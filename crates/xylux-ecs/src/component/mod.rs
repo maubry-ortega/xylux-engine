@@ -14,7 +14,7 @@ pub mod library;
 pub mod storage;
 
 pub use id::ComponentId;
-pub use library::{Transform, Velocity};
+pub use library::{Transform, Velocity, MeshComponent};
 pub use storage::ComponentStorage;
 
 /// Trait que deben implementar todos los componentes ECS.

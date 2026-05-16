@@ -1,62 +1,52 @@
 # Xylux Engine
 
-<p align="center"><img src="/assets/logo_xylux.png" width="400" alt="Xylux Engine Logo"></p>
+Xylux is a modular, high-performance 3D engine built in Rust using Vulkan. It focuses on simplicity through its facade API while maintaining a powerful modular architecture.
 
-> "Build from the XY. Light up the world."
+## Project Structure
 
-**Xylux** es un motor de juegos 3D **compacto, modular y de rendimiento extremo**, escrito en **Rust**. Está diseñado desde cero para desarrolladores que prefieren un enfoque *code-first*, ofreciendo control total y una arquitectura moderna basada en Data-Oriented Design.
+The project is divided into several specialized crates:
 
-Nuestra mascota es **Luxi**, una luciérnaga que simboliza la filosofía del motor: pequeño, brillante y potente.
-<p align="center"><img src="/assets/luxi.png" width="400" alt="Xylux Engine Logo"></p>
+- **`xylux-engine`**: High-level facade for easy engine usage.
+- **`xylux-window`**: Window management and event handling (winit).
+- **`xylux-render`**: Vulkan-based renderer with automatic vertex management.
+- **`xylux-ecs`**: Entity Component System for efficient game logic.
+- **`xylux-core`**: Core types (Vertex, Camera, SceneLoader).
+- **`xylux-assets`**: Asset management and model loading (supports `.obj`, `.blend`, `.gltf`).
+- **`xylux-input`**: Input handling and context management.
 
-## ✨ Estado Actual y Características Implementadas
+## Quick Start (Hello Xylux)
 
-El motor se encuentra en una fase inicial de desarrollo, pero ya cuenta con una base sólida y funcional.
+The easiest way to start is using the `xylux-engine` facade.
 
-- **🚀 ECS de Alto Rendimiento (`xylux-ecs`)**:
-  - **Arquitectura SoA (Struct of Arrays)** para un acceso a memoria amigable con la caché.
-  - **Índices Generacionales** para un manejo seguro y eficiente del ciclo de vida de las entidades.
-  - **Queries ultra-rápidas** basadas en la intersección de `BitVec`s.
-  - **Sistema de Tareas (`TaskGraph`)** para ejecutar sistemas con gestión de dependencias.
+```rust
+use xylux_engine::XyluxEngine;
 
-- **🎨 Renderizador Vulkan (`xylux-render`)**:
-  - Construido sobre **Ash** para un control de bajo nivel sobre la GPU.
-  - Pipeline de renderizado básico, capaz de mostrar primitivas en pantalla.
+fn main() {
+    let mut engine = XyluxEngine::new("My Game");
+    
+    // Load all models in a folder
+    engine.load_assets("assets/models");
+    
+    // Or load a specific model
+    // engine.load_assets("assets/models/abeja.blend");
 
-- **🖼️ Gestión de Ventanas (`xylux-window`)**:
-  - Abstracción simple sobre **winit** para la creación de ventanas y manejo de eventos.
-
-## 🏁 Cómo Empezar
-
-### Prerrequisitos
-
-Asegúrate de tener instalada la última versión estable de Rust y las dependencias de Vulkan para tu sistema operativo.
-
-```bash
-rustup update stable
+    engine.run(|world, input, camera| {
+        // Your game logic here
+        // world: ECS world
+        // input: Input context
+        // camera: Scene camera
+    });
+}
 ```
 
-### Ejecutar el Ejemplo
+## Running Examples
 
-Para ver el motor en acción, clona el repositorio y ejecuta el ejemplo `hello_xylux`:
-
+To run the main demo:
 ```bash
-git clone https://github.com/maubry-ortega/xylux-engine.git
-cd xylux-engine
 cargo run -p hello_xylux
 ```
 
-## 📂 Estructura del Proyecto
+## Documentation
 
-- `crates/`: Contiene los módulos principales del motor (workspace de Rust).
-  - `xylux-ecs`: El núcleo del Entity-Component-System.
-  - `xylux-render`: El backend de renderizado con Vulkan.
-  - `xylux-window`: La capa de abstracción de ventanas.
-  - ... y otros futuros crates del motor.
-- `examples/`: Proyectos de ejemplo que demuestran el uso del motor.
-- `docs/`: Documentación del motor y del lenguaje de scripting.
-
-## 💡 Visión y Roadmap
-
-El objetivo a largo plazo es construir un motor completo que incluya un lenguaje de scripting propio —**Alux**— y una máquina virtual minimalista —**AluxVM**—. Consulta el documento de diseño para más detalles sobre el stack tecnológico, las mejores prácticas y el roadmap completo.
-```
+- [Engine Manual](ENGINE_MANUAL.md): Detailed API reference and usage guide.
+- [Walkthrough](.gemini/antigravity/brain/c2ff06b7-fe99-49d2-bc7f-0a4ca1547053/walkthrough.md): Evolution of the engine's development.

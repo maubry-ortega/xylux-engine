@@ -44,7 +44,7 @@ pub struct RenderObject {
     pub mesh: Mesh,
 }
 
-pub fn collect_renderables(node: &SceneNode, parent_transform: Mat4, camera: &crate::camera::Camera, renderables: &mut Vec<RenderObject>) {
+pub fn collect_renderables(node: &SceneNode, parent_transform: Mat4, camera: &xylux_core::Camera, renderables: &mut Vec<RenderObject>) {
     let global_transform = parent_transform * node.local_transform;
 
     if let Some(mesh) = &node.mesh {

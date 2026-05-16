@@ -13,11 +13,14 @@ fn main() {
     let mut world = World::new(1000);
     world.register_component::<Transform>();
 
-    // Ejecutar loop principal usando la abstracción de XyluxWindow
-    xwindow.run_loop(|window| {
-        renderer.render(&mut world, window);
+    println!("=== Inicializando cámara (Dummy) ===");
+    let camera = xylux_render::Camera::new(glam::Vec3::ZERO, 10.0, 1.33);
+
+    println!("=== Iniciando loop de renderizado ===");
+    xwindow.run_loop(move |window, _events| {
+        // En un test real, haríamos algo aquí
+        renderer.render(&mut world, window, &camera);
     });
 
     // Limpiar recursos al salir
-    renderer.cleanup();
 }

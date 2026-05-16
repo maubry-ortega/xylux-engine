@@ -1,12 +1,12 @@
 use ash::vk;
 use crate::renderer::renderer::Renderer;
-use xylux_ecs::World;
+use xylux_ecs::{World, Query, Transform, MeshComponent};
 use xylux_window::XyluxWindow;
 
 // Ya no usamos 'extensions::khr::Swapchain', usamos el módulo público swapchain
 use ash::khr::swapchain;
 
-pub fn render_frame(renderer: &mut Renderer, _world: &mut World, window: &XyluxWindow, camera: &crate::camera::Camera) {
+pub fn render_frame(renderer: &mut Renderer, _world: &mut World, window: &XyluxWindow, camera: &xylux_core::Camera) {
     let context = &mut renderer.context;
     let device = &context.device;
     let current_frame = renderer.current_frame;
@@ -102,16 +102,65 @@ pub fn render_frame(renderer: &mut Renderer, _world: &mut World, window: &XyluxW
             let offsets = [0];
             device.cmd_bind_vertex_buffers(command_buffer, 0, &buffers, &offsets);
 
-            // PASS 1: Escena 3D (Grid + Modelo)
-            // Se dibuja desde 0 hasta ui_start_index
-            let scene_count = if renderer.ui_start_index > 0 { 
-                renderer.ui_start_index 
-            } else { 
-                renderer.vertex_count 
-            };
+            // PASS 1: Escena 3D (Grid Estático)
+            // Se dibuja desde 0 hasta ui_start_index (Grid)
+            // Esto asume que el GRID está al principio y no es una entidad.
+            // TODO: Mover Grid a una entidad también. Por ahora, dibujar estático.
+            
+            // Grid draw (assuming grid is first 492 verts, hardcoded for now or based on ui_start)
+            // actually renderer.ui_start_index separates Scene from UI.
+             
+            // Dibujamos el grid (o lo que sea estático antes de las entidades dinámicas)
+            if renderer.vertex_count > 0 {
+                // Por ahora, asumimos que el Grid son los primeros N vértices.
+                // device.cmd_draw(command_buffer, 492, 1, 0, 0); 
+                // Pero wait, main.rs sube Grid + Model.
+                // Si usamos MeshComponent, el modelo será dibujado por la entidad.
+                // El grid no tiene entidad (todavía).
+                // Así que dibujamos el Grid manualmente (si sabemos su tamaño/offset).
+                // Main.rs: grid len 492.
+                
+                // Let's draw ONLY the Grid here using Identity Model Matrix (it's centered at 0).
+                 device.cmd_draw(command_buffer, 492, 1, 0, 0);
+            }
 
-            if scene_count > 0 {
-                device.cmd_draw(command_buffer, scene_count, 1, 0, 0);
+            // PASS 1.5: ECS Entities (Dynamic Objects)
+            // Query for (Entity, Transform, MeshComponent)
+            // We need a temporary query to iterate. 
+            // Note: world is mutable borrow so we can create queries.
+            
+            // Create query on the fly. 
+            // Warning: Query creation might be expensive if done every frame? 
+            // xylux-ecs Query::new is cheap (just bitmask calc).
+            
+            let mut query = Query::<(&Transform, &MeshComponent)>::new(_world);
+            
+            for (transform, mesh) in query.iter() {
+                // Calculate Model Matrix from Transform
+                let translation = glam::Mat4::from_translation(transform.position);
+                let rotation = glam::Mat4::from_quat(transform.rotation);
+                let scale = glam::Mat4::from_scale(transform.scale);
+                
+                let model_matrix = translation * rotation * scale;
+                
+                // Calculate MVP for this entity
+                let mvp = camera.get_mvp(model_matrix);
+                
+                 let constants_bytes: &[u8] = std::slice::from_raw_parts(
+                    &mvp as *const glam::Mat4 as *const u8,
+                    std::mem::size_of::<glam::Mat4>(),
+                );
+        
+                device.cmd_push_constants(
+                    command_buffer,
+                    renderer.pipeline.pipeline_layout,
+                    vk::ShaderStageFlags::VERTEX,
+                    0,
+                    constants_bytes,
+                );
+                
+                // Draw mesh
+                device.cmd_draw(command_buffer, mesh.count, 1, mesh.start_index, 0);
             }
 
             // PASS 2: UI Overlay (Panel Lateral)

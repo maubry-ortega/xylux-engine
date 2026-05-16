@@ -1,0 +1,11 @@
+[package]
+name = "xylux-assets"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+xylux-core = { path = "../xylux-core" }
+glam       = { workspace = true }
+blend      = "0.8.0"
+zstd       = "0.13"
+tempfile   = "3.10"

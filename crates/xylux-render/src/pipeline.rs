@@ -40,8 +40,8 @@ impl Pipeline {
         ];
 
         // Configuración básica de pipeline
-        let binding_descriptions = [crate::vertex::Vertex::get_binding_description()];
-        let attribute_descriptions = crate::vertex::Vertex::get_attribute_descriptions();
+        let binding_descriptions = [crate::vertex::get_vertex_binding_description()];
+        let attribute_descriptions = crate::vertex::get_vertex_attribute_descriptions();
 
         let vertex_input_info = vk::PipelineVertexInputStateCreateInfo {
             vertex_binding_description_count: binding_descriptions.len() as u32,

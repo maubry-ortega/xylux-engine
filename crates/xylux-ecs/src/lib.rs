@@ -26,7 +26,7 @@ pub mod system;
 pub mod world;
 
 // --- REEXPORTS ---
-pub use component::{Component, ComponentId, Transform, Velocity};
+pub use component::{Component, ComponentId, Transform, Velocity, MeshComponent};
 pub use entity::Entity;
 pub use query::Query;
 pub use system::{System, TaskGraph};
