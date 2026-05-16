@@ -65,7 +65,7 @@ Crear un motor 3D optimizado para bajo coste en tiempo y memoria, con APIs limpi
 | **Núcleo Motor** | Rust (con DOD via ECS propio) | - | Simplicidad, borrow checker; inspirado en Bevy/Unity DOTS. |
 | **Renderizado**  | Rust + Ash (Vulkan puro) | wgpu como fallback (feature flag) | Control AAA (command buffers, multi-queue); soporta ray tracing. Multiplataforma con MoltenVK. |
 | **ECS**          | Rust (crate propio `xylux-ecs` con SoA) | Inspirado en Bevy pero minimal | Caché locality; queries compiladas y paralelo con Rayon. |
-| **Input**        | Rust + winit | - | Multiplataforma (teclado/mouse/gamepad/touch). Jerárquico con pila. |
+| **Ventanas/Input** | Rust + SDL3 | winit (alternativa más ligera) | SDL3 es maduro, multiplataforma y gestiona ventanas, input y audio de forma integrada. |
 | **Audio**        | Rust + cpal (minimal) | Kira o Wwise SDK (opcional) | Bajo overhead; positional audio. |
 | **Física**       | Rust + Rapier3D | Propio collider (AABB) | Integración ECS; paralelo seguro. |
 | **Assets/Memoria**| Rust + Serde/RON + Pooling (bumpalo) | Tokio para async streaming | Evita GC; LOD automático y pooling. |
@@ -78,7 +78,7 @@ Crear un motor 3D optimizado para bajo coste en tiempo y memoria, con APIs limpi
 | **Testing**      | Rust (cargo test/bench con Criterion) | GitHub Actions CI | Unitarios para VM; perf regressions. |
 | **Portabilidad** | Cross-compile Cargo; Vulkan | WebAssembly export (Rust/Wasm + Vulkan polyfill) | Linux/Windows/macOS/Android; headless para CI. |
 
-**Dependencias Mínimas:** `ash`, `winit`, `glam`, `rayon`, `serde`, `ron`, `rapier3d`, `cpal`, `tokio`, `criterion`. Feature flags para opcionales.
+**Dependencias Mínimas:** `ash`, `sdl3`, `glam`, `rayon`, `serde`, `ron`, `rapier3d`, `cpal`, `tokio`, `criterion`. Feature flags para opcionales.
 
 **Estructura del Proyecto:**
 ```

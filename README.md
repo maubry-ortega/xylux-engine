@@ -23,8 +23,8 @@ El motor se encuentra en una fase inicial de desarrollo, pero ya cuenta con una 
   - Construido sobre **Ash** para un control de bajo nivel sobre la GPU.
   - Pipeline de renderizado básico, capaz de mostrar primitivas en pantalla.
 
-- **🖼️ Gestión de Ventanas (`xylux-window`)**:
-  - Abstracción simple sobre **winit** para la creación de ventanas y manejo de eventos.
+- **🖼️ Gestión de Ventanas y Eventos (`xylux-window`)**:
+  - Abstracción sobre **SDL3**, proporcionando una base robusta y multiplataforma para la creación de ventanas, manejo de input y audio.
 
 ## 🏁 Cómo Empezar
 
@@ -43,7 +43,7 @@ Para ver el motor en acción, clona el repositorio y ejecuta el ejemplo `hello_t
 ```bash
 git clone https://github.com/maubry-ortega/xylux-engine.git
 cd xylux-engine
-cargo run --example hello_triangle
+cargo run -p hello_triangle
 ```
 
 ## 📂 Estructura del Proyecto
